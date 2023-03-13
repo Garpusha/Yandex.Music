@@ -9,11 +9,13 @@ def get_albums(id_string):
         print('Shit happens')
         exit()
     print('Let\'s go')
+
     # Ищу название исполнителя
     search_str = 'page-artist__title typo-h1 typo-h1_big">'
     start_position = result.text.find(search_str)
     end_position = result.text.find('<', start_position + len(search_str))
     band = result.text[start_position+len(search_str):end_position]
+
     # Убираю лишнее
     start_position = result.text.find('Альбомы')
     end_position = result.text.find('Сборники', start_position)
@@ -59,9 +61,28 @@ def get_albums(id_string):
         end_position = cutted_string.find('<',start_position)
         album_year = cutted_string[start_position:end_position].strip()
         cutted_string = cutted_string[end_position:]
-
+        # Вставить считывание жанров и обработку треков
         albums.append({'band':band, 'name':album_name, 'year':album_year, 'URL':album_link})
     return albums
+
+def get_tracks(albums):
+    tracks = []
+    for album in albums:
+        url = album['URL']
+        result = requests.get(url=url)
+        if result.status_code != 200:
+            print('Shit happens')
+            exit()
+        print('Let\'s go')
+        search_str = '"numTracks":'
+        cutted_string = result.text
+        start_position = cutted_string.find(search_str)
+        end_position = cutted_string.find(',', start_position + len(start_position))
+        tracks_no = int(cutted_string[start_position:end_position])
+        cutted_string = cutted_string[end_position:]
+        for index in range(tracks_no):
+
+
 
 def write_to_file(my_list, filename):
     with open(filename, 'w', encoding='utf32') as my_file:
@@ -71,5 +92,8 @@ def write_to_file(my_list, filename):
                 my_file.write(my_string)
             my_file.write('\n')
 
+
 id = input('Enter musician ID (could be found at music.yandex.ru): ')
-write_to_file(get_albums(id),f'{id} albums.csv')
+discography = get_albums(id)
+write_to_file(discography,f'{id} albums.csv')
+tracklist = get_tracks(discography)
