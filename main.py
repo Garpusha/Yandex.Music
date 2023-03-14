@@ -1,5 +1,47 @@
 import requests
 
+def parse_track(track_details):
+    my_list = track_details.split(sep=',')
+    del my_list[1]
+    del my_list[2]
+    my_list[0] = int(my_list[0][2:4]) * 3600 + int(my_list[0][5:7]) * 60 + int(my_list[0][8:10])
+    my_list[1] = my_list[1][1:-1]
+    my_list[2] = my_list[2][1:-1]
+    return {'name':my_list[1], 'length':my_list[0], 'URL':my_list[2]}
+
+def get_tracks(album):
+    tracks = []
+    url = album['URL']
+    result = requests.get(url=url)
+    if result.status_code != 200:
+        print('Shit happens')
+        exit()
+    print('Looking for tracks')
+    cutted_string = result.text
+
+    # Читаю количество треков в альбоме
+    search_str = '"numTracks":'
+    start_position = cutted_string.find(search_str)
+    end_position = cutted_string.find(',', start_position + len(start_position))
+    tracks_no = int(cutted_string[start_position:end_position])
+    cutted_string = cutted_string[end_position:]
+
+    # Читаю жанр
+    search_str = '"genre":"'
+    start_position = cutted_string.find(search_str)
+    end_position = cutted_string.find('"', start_position + len(start_position))
+    genre = cutted_string[start_position:end_position]
+    cutted_string = cutted_string[end_position:]
+
+    for index in range(tracks_no):
+        search_str = '{"@type":"MusicRecording","duration":'
+        start_position = cutted_string.find(search_str)
+        end_position = cutted_string.find('}', start_position + len(start_position))
+        line_for_parse = cutted_string[start_position:end_position]
+        cutted_string = cutted_string[end_position:]
+        tracks.append(parse_track(line_for_parse))
+    return tracks, tracks_no, genre
+
 def get_albums(id_string):
 
     albums = []
@@ -62,38 +104,35 @@ def get_albums(id_string):
         album_year = cutted_string[start_position:end_position].strip()
         cutted_string = cutted_string[end_position:]
         # Вставить считывание жанров и обработку треков
-        albums.append({'band':band, 'name':album_name, 'year':album_year, 'URL':album_link})
+
+    # Считываю названия треков в альбоме, их количество, жанр альбома (исполнителя)
+
+        my_tracks, my_genre, my_tracks_num = get_tracks(album_link)
+        albums.append({'band':band, 'name':album_name, 'year':album_year, 'genre':my_genre, 'tracks_num':my_tracks_num, 'URL':album_link, 'tracks':my_tracks})
     return albums
 
-def get_tracks(albums):
-    tracks = []
-    for album in albums:
-        url = album['URL']
-        result = requests.get(url=url)
-        if result.status_code != 200:
-            print('Shit happens')
-            exit()
-        print('Let\'s go')
-        search_str = '"numTracks":'
-        cutted_string = result.text
-        start_position = cutted_string.find(search_str)
-        end_position = cutted_string.find(',', start_position + len(start_position))
-        tracks_no = int(cutted_string[start_position:end_position])
-        cutted_string = cutted_string[end_position:]
-        for index in range(tracks_no):
 
+def write_to_file(my_list):
+    albums_file = open('albums.csv', 'w')
+    tracks_file = open('tracks.csv', 'w')
+    my_string = 'BandName;AlbumName;AlbumYear;AlbumGenre;TracksInAlbum;URL\n'
+    albums_file.write(my_string)
+    my_string = 'BandName;AlbumName;TrackName;TrackLength;URL\n'
+    for album in my_list:
+        my_string = f'{album["band"]};{album["name"]};{album["year"]};{album["genre"]};{album["tracks_num"]};{album["URL"]}\n'
+        albums_file.write(my_string)
+        for track in album['tracks']:
+            my_string = f'{album["band"]};{album["name"]};{track["name"]};{track["length"]};{track["URL"]}\n'
+            tracks_file.write(my_string)
+    albums_file.close()
+    tracks_file.close()
 
-
-def write_to_file(my_list, filename):
-    with open(filename, 'w', encoding='utf32') as my_file:
-        for element in my_list:
-            for value in element.values():
-                my_string = f'{value};'
-                my_file.write(my_string)
-            my_file.write('\n')
-
-
-id = input('Enter musician ID (could be found at music.yandex.ru): ')
-discography = get_albums(id)
-write_to_file(discography,f'{id} albums.csv')
-tracklist = get_tracks(discography)
+discography = []
+while True
+    id = input('Enter musician ID (could be found at music.yandex.ru) or \'0\' to exit ')
+    if id == '0' or not id:
+        exit
+    if not id.isnumeric():
+        pass
+    discography.append(get_albums(id))
+write_to_file(discography)
