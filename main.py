@@ -1,10 +1,13 @@
 import requests
+import configparser
 
 def set_to_str(my_set):
-    temp_str = ''
-    for item in my_set:
-        temp_str = f'{temp_str}{str(item)}\n'
-    return temp_str
+    result_str = ''
+    for index, item in enumerate(my_set):
+        temp_str = ''
+        temp_str = f'{index + 1};{temp_str}{str(item)}\n'
+        result_str = result_str + temp_str
+    return result_str
 
 def parse_track(track_details):
     my_list = []
@@ -24,7 +27,7 @@ def parse_track(track_details):
     # my_list[2] = my_list[2][7:-1]
     return {'name':my_list[1], 'length':my_list[0], 'URL':my_list[2]}
 
-def get_tracks(album_url):
+def get_tracks(album_url, min_tracks):
     tracks = []
     result = requests.get(url=album_url)
     if result.status_code != 200:
@@ -37,7 +40,7 @@ def get_tracks(album_url):
     start_position = cutted_string.find(search_str)
     end_position = cutted_string.find(',', start_position + len(search_str))
     tracks_no = int(cutted_string[start_position + len(search_str):end_position])
-    if tracks_no < 6:
+    if tracks_no < min_tracks:
         return None, None, None
     cutted_string = cutted_string[end_position:]
     print(f'{tracks_no} tracks' )
@@ -57,6 +60,13 @@ def get_tracks(album_url):
         cutted_string = cutted_string[end_position:]
         tracks.append(parse_track(line_for_parse))
     return tracks, genre, tracks_no
+
+
+def read_config(path, section, parameter):
+    config = configparser.ConfigParser()
+    config.read(path)
+    c_value = config.get(section, parameter)
+    return c_value
 
 def get_albums(id_string):
 
@@ -124,7 +134,8 @@ def get_albums(id_string):
 
     # Считываю названия треков в альбоме, их количество, жанр альбома (исполнителя)
         print(f'Found album: {album_name} ({album_year})')
-        my_tracks, my_genre, my_tracks_num = get_tracks(album_link)
+        mintracks = int(read_config('config.ini', 'Main', 'SkipIfTracksLessThan'))
+        my_tracks, my_genre, my_tracks_num = get_tracks(album_link, mintracks)
 
         # Исключаю синглы
         if my_tracks_num:
@@ -144,14 +155,17 @@ def write_to_file(my_list):
     albums_file.write(my_string)
     my_string = 'BandName;AlbumName;TrackName;TrackLength;URL\n'
     tracks_file.write(my_string)
+    album_index, track_index = 0, 0
     for band in my_list:
         for album in band:
-            my_string = f'{album["band"]};{album["name"]};{album["year"]};{album["genre"]};{album["tracks_num"]};{album["URL"]}\n'
+            album_index += 1
+            my_string = f'{album_index};{album["band"]};{album["name"]};{album["year"]};{album["genre"]};{album["tracks_num"]};{album["URL"]}\n'
             albums_file.write(my_string)
             band_set.add(album['band'])
             genre_set.add(album['genre'])
             for track in album['tracks']:
-                my_string = f'{album["band"]};{album["name"]};{track["name"]};{track["length"]};{track["URL"]}\n'
+                track_index += 1
+                my_string = f'{track_index};{album["band"]};{album["name"]};{track["name"]};{track["length"]};{track["URL"]}\n'
                 tracks_file.write(my_string)
     albums_file.close()
     tracks_file.close()
@@ -164,12 +178,15 @@ def write_to_file(my_list):
 # start here ------------------------------------------------------------------------------
 
 discography = []
-while True:
-    id = input('Enter musician ID (could be found at music.yandex.ru), \'0\' to finish or empty string to abort: ')
-    if not id or not id.isnumeric():
-        print('Aborting')
-        exit()
-    if id == '0':
-        break
-    discography.append(get_albums(id))
+bands_list = read_config('config.ini', 'Main', 'BandID').split(',')
+collections = int(read_config('config.ini', 'Main', 'Collections'))
+# while True:
+#     id = input('Enter musician ID (could be found at music.yandex.ru), \'0\' to finish or empty string to abort: ')
+#     if not id or not id.isnumeric():
+#         print('Aborting')
+#         exit()
+#     if id == '0':
+#         break
+for band_id in bands_list:
+    discography.append(get_albums(band_id))
 write_to_file(discography)
