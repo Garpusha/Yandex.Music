@@ -1,5 +1,6 @@
 import requests
 import configparser
+from random import randint
 
 def set_to_str(my_set):
     result_str = ''
@@ -147,8 +148,6 @@ def get_albums(id_string):
 def write_to_file(my_list):
     albums_file = open('albums.csv', 'w', encoding='utf-8')
     tracks_file = open('tracks.csv', 'w', encoding='utf-8')
-    genres_file = open('genres.csv', 'w', encoding='utf-8')
-    bands_file = open('bands.csv', 'w', encoding='utf-8')
     band_set = set()
     genre_set = set()
     my_string = 'BandName;AlbumName;AlbumYear;AlbumGenre;TracksInAlbum;URL\n'
@@ -169,17 +168,35 @@ def write_to_file(my_list):
                 tracks_file.write(my_string)
     albums_file.close()
     tracks_file.close()
-    genres_file.write(set_to_str(genre_set))
-    bands_file.write(set_to_str(band_set))
-    genres_file.close()
-    bands_file.close()
+    with open('genres.csv', 'w', encoding='utf-8') as genres_file:
+        genres_file.write(set_to_str(genre_set))
+    with open('bands.csv', 'w', encoding='utf-8') as bands_file:
+        bands_file.write(set_to_str(band_set))
+
+    # Создаю сборники
+    collections = int(read_config('config.ini', 'Main', 'Collections'))
+    collection_name = read_config('config.ini', 'Main', 'CollectionName')
+    tracks_per_collection = int(read_config('config.ini', 'Main', 'TracksPerCollection'))
+    with open('collections.csv', 'w', encoding='utf-8') as collections_file:
+        for index in range(collections):
+            collections_file.write(f'{index + 1};{collection_name}{index + 1}\n')
+    # создаю смежную таблицу сборник-трек
+
+    tracks_in_collection = set()
+    with open('collection-track.csv', 'w', encoding='utf-8') as collection_track:
+        for index in range(collections):
+            while len(tracks_in_collection) != tracks_per_collection:
+                tracks_in_collection.add(randint(1, track_index))
+            for index_2 in tracks_in_collection:
+                collection_track.write(f'{index + 1};{index_2}\n')
+            print(f'Collection #{index + 1} created')
     return
 
 # start here ------------------------------------------------------------------------------
 
 discography = []
 bands_list = read_config('config.ini', 'Main', 'BandID').split(',')
-collections = int(read_config('config.ini', 'Main', 'Collections'))
+
 # while True:
 #     id = input('Enter musician ID (could be found at music.yandex.ru), \'0\' to finish or empty string to abort: ')
 #     if not id or not id.isnumeric():
