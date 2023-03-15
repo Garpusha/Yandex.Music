@@ -1,5 +1,11 @@
 import requests
 
+def set_to_str(my_set):
+    temp_str = ''
+    for item in my_set:
+        temp_str = f'{temp_str}{str(item)}\n'
+    return temp_str
+
 def parse_track(track_details):
     my_list = []
     my_list.append(track_details[1:11])
@@ -31,6 +37,8 @@ def get_tracks(album_url):
     start_position = cutted_string.find(search_str)
     end_position = cutted_string.find(',', start_position + len(search_str))
     tracks_no = int(cutted_string[start_position + len(search_str):end_position])
+    if tracks_no < 6:
+        return None, None, None
     cutted_string = cutted_string[end_position:]
     print(f'{tracks_no} tracks' )
 
@@ -117,14 +125,21 @@ def get_albums(id_string):
     # Считываю названия треков в альбоме, их количество, жанр альбома (исполнителя)
         print(f'Found album: {album_name} ({album_year})')
         my_tracks, my_genre, my_tracks_num = get_tracks(album_link)
-        albums.append({'band':band, 'name':album_name, 'year':album_year, 'genre':my_genre, 'tracks_num':my_tracks_num, 'URL':album_link, 'tracks':my_tracks})
+
+        # Исключаю синглы
+        if my_tracks_num:
+            albums.append({'band':band, 'name':album_name, 'year':album_year, 'genre':my_genre, 'tracks_num':my_tracks_num, 'URL':album_link, 'tracks':my_tracks})
     print(f'{len(albums)} albums total')
     return albums
 
 
 def write_to_file(my_list):
-    albums_file = open('albums.csv', 'w', encoding='utf32')
-    tracks_file = open('tracks.csv', 'w', encoding='utf32')
+    albums_file = open('albums.csv', 'w', encoding='utf-8')
+    tracks_file = open('tracks.csv', 'w', encoding='utf-8')
+    genres_file = open('genres.csv', 'w', encoding='utf-8')
+    bands_file = open('bands.csv', 'w', encoding='utf-8')
+    band_set = set()
+    genre_set = set()
     my_string = 'BandName;AlbumName;AlbumYear;AlbumGenre;TracksInAlbum;URL\n'
     albums_file.write(my_string)
     my_string = 'BandName;AlbumName;TrackName;TrackLength;URL\n'
@@ -133,11 +148,17 @@ def write_to_file(my_list):
         for album in band:
             my_string = f'{album["band"]};{album["name"]};{album["year"]};{album["genre"]};{album["tracks_num"]};{album["URL"]}\n'
             albums_file.write(my_string)
+            band_set.add(album['band'])
+            genre_set.add(album['genre'])
             for track in album['tracks']:
                 my_string = f'{album["band"]};{album["name"]};{track["name"]};{track["length"]};{track["URL"]}\n'
                 tracks_file.write(my_string)
     albums_file.close()
     tracks_file.close()
+    genres_file.write(set_to_str(genre_set))
+    bands_file.write(set_to_str(band_set))
+    genres_file.close()
+    bands_file.close()
     return
 
 # start here ------------------------------------------------------------------------------
