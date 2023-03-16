@@ -2,6 +2,23 @@ import requests
 import configparser
 from random import randint
 
+def get_page(page_url):
+    result = requests.get(url=page_url)
+    if result.status_code != 200:
+        print('Shit happens')
+        exit()
+    print(f'Reading {page_url} -- OK)
+    return result.text
+
+def read_config(path, section, parameter):
+    config = configparser.ConfigParser()
+    config.read(path)
+    c_value = config.get(section, parameter)
+    return c_value
+
+
+
+
 def set_to_str(my_set):
     result_str = ''
     for index, item in enumerate(my_set):
@@ -63,11 +80,7 @@ def get_tracks(album_url, min_tracks):
     return tracks, genre, tracks_no
 
 
-def read_config(path, section, parameter):
-    config = configparser.ConfigParser()
-    config.read(path)
-    c_value = config.get(section, parameter)
-    return c_value
+
 
 def get_albums(id_string):
 
@@ -194,9 +207,19 @@ def write_to_file(my_list):
     return
 
 # start here ------------------------------------------------------------------------------
+# Reading config
+bands_list = read_config('config.ini', 'Main', 'BandID').split(',')
+collections = int(read_config('config.ini', 'Main', 'Collections'))
+collection_name = read_config('config.ini', 'Main', 'CollectionName')
+tracks_per_collection = int(read_config('config.ini', 'Main', 'TracksPerCollection'))
+
+
+
+for band_id in bands_list:
+    html_page = get_page(f'https://music.yandex.ru/artist/{band_id}/albums')
 
 discography = []
-bands_list = read_config('config.ini', 'Main', 'BandID').split(',')
+
 
 # while True:
 #     id = input('Enter musician ID (could be found at music.yandex.ru), \'0\' to finish or empty string to abort: ')
@@ -208,3 +231,4 @@ bands_list = read_config('config.ini', 'Main', 'BandID').split(',')
 for band_id in bands_list:
     discography.append(get_albums(band_id))
 write_to_file(discography)
+
