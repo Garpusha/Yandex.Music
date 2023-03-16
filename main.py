@@ -72,7 +72,7 @@ min_tracks = int(read_config('config.ini', 'Main', 'SkipIfTracksLessThan'))
 # genre = {'genre_id':, 'genre_name':}
 # band = {'band_id':, 'band_name':, 'band_url':}
 # album = {'album_id':, 'album_name':, 'album_year':, 'album_url':}
-# track = {'track_id':, 'track_name':, 'track_length':, 'track_url':, 'album_id':}
+# track = {'track_id':, 'track_name':, 'track_length':, 'album_id':, 'track_url':}
 # collection = {'collection_id':, 'collection_name':, 'collection_year':}
 # band_genre = {'band_genre_id':, 'band_id':, 'genre_id':}
 # band_album = {'band_album_id':, 'band_id':, 'album'_id':'}
@@ -90,12 +90,12 @@ band_genre_set = set()
 for band in band_list:
     band_url = f'https://music.yandex.ru/artist/{band}/albums'
     band_page = get_page(band_url)
-    # band_page = band_page[band_page.find('Альбомы'): band_page.find('Сборники')]
     band_name, cut_position = parse_html(band_page, 'page-artist__title typo-h1 typo-h1_big">', '<')
     band_page = band_page[cut_position:]
     band_id += 1
     bands.append({'id':str(band_id), 'band_name':band_name, 'band_url':band_url})
     print(f'Musician found: {band_name}')
+    band_page = band_page[band_page.find('Альбомы'): band_page.find('Сборники')]
 
     while True:
         album_url, cut_position = parse_html(band_page, '<a href="/album/', '"')
