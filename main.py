@@ -71,6 +71,7 @@ def read_config(path, section, parameter):
 
 def get_albums(id_string):
 
+    band_id, album_id, genre_id = 0, 0, 0
     albums = []
     url = f'https://music.yandex.ru/artist/{id_string}/albums'
     result = requests.get(url=url)
