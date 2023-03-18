@@ -45,6 +45,7 @@ def create_collections(c_name, c_num, c_size, tracks_num):
         while len(t_set) != c_size:
             t_set.add(str(randint(1, tracks_num)))
         t_list = list(t_set)
+        t_set.clear()
         for index_2 in range(c_size):
             c_t_id += 1
             c_t_list.append({'id':str(c_t_id),'collection_id':str(index_1 + 1), 'track_id':str(t_list[index_2])})
